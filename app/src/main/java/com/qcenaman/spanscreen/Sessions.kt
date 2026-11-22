@@ -107,6 +107,7 @@ object Show {
     fun clockOffset(): Long = if (isHost) 0L else PeerSession.clock.offset
 
     fun set(ctx: Context, c: Content) {
+        Log.i(TAG, "show: $c")
         content = c
         onMain {
             listeners.forEach { it() }

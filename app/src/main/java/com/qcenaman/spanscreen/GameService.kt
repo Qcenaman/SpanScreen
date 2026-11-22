@@ -499,6 +499,8 @@ class TileEncoder(private val host: String, private val port: Int, w0: Int, h0: 
 
     private fun send() {
         var socket: Socket? = null
+        var lastError: Exception? = null
+        var attempts = 0
         val deadline = SystemClock.elapsedRealtime() + 15_000
         while (running && socket == null && SystemClock.elapsedRealtime() < deadline) {
             try {
@@ -507,12 +509,16 @@ class TileEncoder(private val host: String, private val port: Int, w0: Int, h0: 
                     sendBufferSize = 512 * 1024
                     connect(InetSocketAddress(host, port), 2000)
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                if (lastError == null) Log.w(TAG, "connect $host:$port failed: $e")
+                lastError = e
+                attempts++
                 socket = null
                 Thread.sleep(300)
             }
         }
-        if (socket == null) { Log.w(TAG, "couldn't reach $host"); return }
+        if (socket == null) { Log.w(TAG, "couldn't reach $host:$port after $attempts tries (running=$running): $lastError"); return }
+        Log.i(TAG, "streaming to $host:$port")
         try {
             val out = DataOutputStream(BufferedOutputStream(socket.getOutputStream(), 1 shl 16))
             out.writeUTF(mime); out.writeInt(width); out.writeInt(height); out.flush()

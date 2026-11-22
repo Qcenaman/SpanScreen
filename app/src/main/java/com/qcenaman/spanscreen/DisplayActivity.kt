@@ -119,6 +119,7 @@ class DisplayActivity : Activity() {
 
     private fun render() {
         val c = Show.content
+        Log.i("SpanScreen", "render $c (was $current) host=${Show.isHost}")
         if (c == current) return
         teardown()
         current = c
@@ -271,6 +272,7 @@ class DisplayActivity : Activity() {
         root.addView(view, FrameLayout.LayoutParams(-1, -1))
         view.holder.addCallback(object : SurfaceHolder.Callback {
             override fun surfaceCreated(holder: SurfaceHolder) {
+                Log.i("SpanScreen", "game surface created, host=${Show.isHost}")
                 if (Build.VERSION.SDK_INT >= 30) {
                     try { holder.surface.setFrameRate(maxRefresh, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT) } catch (_: Exception) { }
                 }
@@ -279,6 +281,7 @@ class DisplayActivity : Activity() {
             }
             override fun surfaceChanged(holder: SurfaceHolder, f: Int, w: Int, h: Int) {}
             override fun surfaceDestroyed(holder: SurfaceHolder) {
+                Log.i("SpanScreen", "game surface destroyed")
                 receiver?.shutdown(); receiver = null
             }
         })
@@ -317,8 +320,10 @@ class GameReceiver(private val surface: Surface, private val port: Int) {
                 ss.reuseAddress = true
                 ss.bind(InetSocketAddress(port))
                 server = ss
+                Log.i("SpanScreen", "game receiver listening on $port")
                 while (running) {
                     val s = ss.accept()
+                    Log.i("SpanScreen", "game stream from ${s.inetAddress.hostAddress}")
                     socket = s
                     s.tcpNoDelay = true
                     s.receiveBufferSize = 1 shl 20
@@ -326,7 +331,7 @@ class GameReceiver(private val surface: Surface, private val port: Int) {
                     finally { try { s.close() } catch (_: Exception) { }; releaseCodec() }
                 }
             } catch (e: Exception) {
-                if (running) Log.w("SpanScreen", "receiver: $e")
+                Log.w("SpanScreen", "receiver stopped (running=$running): $e")
             }
         }
     }
