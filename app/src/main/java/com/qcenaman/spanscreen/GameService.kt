@@ -504,10 +504,12 @@ class TileEncoder(private val host: String, private val port: Int, w0: Int, h0: 
         val deadline = SystemClock.elapsedRealtime() + 15_000
         while (running && socket == null && SystemClock.elapsedRealtime() < deadline) {
             try {
+                // Built outside apply{}: inside it, "port" would mean the unconnected Socket's own port (0).
+                val target = InetSocketAddress(host, port)
                 socket = Socket().apply {
                     tcpNoDelay = true
                     sendBufferSize = 512 * 1024
-                    connect(InetSocketAddress(host, port), 2000)
+                    connect(target, 2000)
                 }
             } catch (e: Exception) {
                 if (lastError == null) Log.w(TAG, "connect $host:$port failed: $e")
